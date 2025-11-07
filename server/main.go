@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -26,7 +27,7 @@ func createServer() *http.Server {
 	mux := http.NewServeMux()
 
 	// general routes (unprotected)
-	mux.HandleFunc("GET /", healthHandler)
+	mux.HandleFunc("/", healthHandler)
 
 	//api routers (protected)
 	api := http.NewServeMux()
@@ -57,7 +58,7 @@ func runServer() {
 		slog.Info("Server started on ", "host", host, "port", port)
 		err = server.ListenAndServe()
 		if err != nil {
-			slog.Error("Error starting server", "error", err)
+			log.Fatalf("Error starting server: %s", err.Error())
 		}
 	}()
 
