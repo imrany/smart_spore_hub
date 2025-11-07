@@ -1,5 +1,83 @@
-# Smart spore mail server
+# Smart Spore Hub
+
+Smart Spore Hub is a web application for managing spore data, providing an API
+for sending emails.
+
+## Usage
+
+### Running the application
+
+To run the application, execute the following command:
 
 ```bash
 go run main.go
 ```
+
+This will start the server on the host and port specified in the configuration.
+By default, it runs on `0.0.0.0:8080`.
+
+### Configuration
+
+The application can be configured using command-line flags, environment variables,
+and a `.env` file.
+
+#### Command-Line Flags
+
+The following command-line flags are available:
+
+- `--port`: Port to listen on (default: `8080`)
+- `--host`: Host to listen on (default: `0.0.0.0`)
+- `--SMTP_HOST`: SMTP Host (default: `smtp.gmail.com`)
+- `--SMTP_PORT`: SMTP Port (default: `587`)
+- `--SMTP_USERNAME`: SMTP Username
+- `--SMTP_PASSWORD`: SMTP Password
+- `--SMTP_EMAIL`: SMTP Email
+
+Example:
+
+```bash
+go run main.go --port 9000 --host 127.0.0.1
+```
+
+#### Environment Variables
+
+The application also supports configuration through environment variables.
+The corresponding environment variables for the flags are:
+
+- `PORT`
+- `HOST`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USERNAME`
+- `SMTP_PASSWORD`
+- `SMTP_EMAIL`
+
+#### .env File
+
+You can also use a `.env` file to configure the application.
+The application will automatically load the `.env` file
+if it is present in the same directory as theexecutable.
+
+Example `.env` file:
+
+```bash
+PORT=9000
+HOST=127.0.0.1
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=your_username
+SMTP_PASSWORD=your_password
+SMTP_EMAIL=your_email@example.com
+```
+
+## API Endpoints
+
+The following API endpoints are available:
+
+- `/health`: Health check endpoint (unprotected)
+- `POST /api/v1/mailer/send`: Send email (protected, requires authentication)
+
+### Authentication
+
+The `/api/v1/mailer/send` endpoint requires authentication.
+You need to configure the authentication middleware to use this endpoint.
