@@ -2,6 +2,7 @@ package v1
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"github.com/imrany/smart_spore_hub/server/pkg/whatsapp"
@@ -26,16 +27,21 @@ func SendWhatsAppMessage(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	// Assuming there's a method to actually send the message.  Since there isn't one on the
-	// struct `WhatsAppService`, we can't call it.  This line has been replaced with a comment
+
 	err = whatsapp.SendMessage(r.Context(), req.PhoneNumber, req.Message)
 	if err != nil {
+		slog.Error("Failed to send WhatsApp message", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(Response{
 			Success: false,
-			Message: "Invalid request body",
+			Message: "Failed to send WhatsApp message",
 		})
 		return
 	}
+
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(Response{
+		Success: true,
+		Message: "WhatsApp message sent successfully",
+	})
 }
