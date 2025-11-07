@@ -1,1 +1,5 @@
 .env
+bin/
+
+# sqlite3
+*.db

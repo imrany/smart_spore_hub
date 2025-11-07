@@ -16,17 +16,21 @@ import (
 
 	v1 "github.com/imrany/smart_spore_hub/server/internal/v1"
 	"github.com/imrany/smart_spore_hub/server/middleware"
+	"github.com/imrany/smart_spore_hub/server/pkg/whatsapp"
+
+	_ "modernc.org/sqlite"
 )
 
 func createServer() *http.Server {
 	mux := http.NewServeMux()
-
 	// general routes (unprotected)
 	mux.HandleFunc("/health", v1.HealthHandler)
 
 	//api routers (protected)
 	api := http.NewServeMux()
 	api.HandleFunc("POST /v1/mailer/send", v1.SendMail)
+	api.HandleFunc("POST /v1/whatsapp/send", v1.SendWhatsAppMessage)
+
 	mux.Handle("/api/", middleware.AuthMiddleware(api))
 
 	srv := &http.Server{
@@ -37,20 +41,31 @@ func createServer() *http.Server {
 		IdleTimeout:    60 * time.Second,
 		MaxHeaderBytes: 1 << 20, // 1 MB
 	}
-
 	return srv
 }
 
 func runServer() {
 	var err error
 	server := createServer()
-
 	port := viper.GetInt("PORT")
 	host := viper.GetString("HOST")
 
+	// Initialize WhatsApp client
+	slog.Info("Initializing WhatsApp client...")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	if err := whatsapp.Init(ctx, nil); err != nil {
+		slog.Error("Error initializing WhatsApp client", "error", err.Error())
+		slog.Warn("Server will start without WhatsApp integration")
+		// Continue running server even if WhatsApp fails to initialize
+	} else {
+		slog.Info("WhatsApp client initialized successfully")
+	}
+
 	// Start server in goroutine
 	go func() {
-		slog.Info("Server started on ", "host", host, "port", port)
+		slog.Info("Server started", "host", host, "port", port)
 		err = server.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
 			slog.Error("Error starting server", "error", err.Error())
@@ -60,11 +75,16 @@ func runServer() {
 	// Graceful shutdown on SIGINT/SIGTERM
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-
 	sig := <-quit
-	slog.Info("Shutdown signal received", "signal", sig, "shutting down gracefully...", "")
+	slog.Info("Shutdown signal received", "signal", sig)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// Shutdown WhatsApp client
+	slog.Info("Disconnecting WhatsApp client...")
+	whatsapp.Disconnect()
+
+	// Shutdown HTTP server
+	slog.Info("Shutting down HTTP server...")
+	ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
