@@ -77,7 +77,7 @@ The following API endpoints are available:
 - `/health`: Health check endpoint (unprotected)
 - `POST /api/v1/mailer/send`: Send email (protected, requires authentication)
 
-### Authentication
+### Mailer Service
 
 The `/api/v1/mailer/send` endpoint requires authentication.
 You need to configure the authentication middleware to use this endpoint.
@@ -121,6 +121,45 @@ response with the following format:
     ```json
     {
       "message": "Invalid request body",
+      "success": false
+    }
+    ```
+
+#### Whatsapp Service
+
+The `/api/v1/whatsapp/send` endpoint requires authentication.
+You need to configure the authentication middleware to use this endpoint.
+Here's how the `/api/v1/whatsapp/send` endpoint works:
+
+1. **Request:** It expects a `POST` request with a JSON body.
+The JSON body should have the following format:
+
+    ```json
+    {
+     "phone_number": "254712345678",
+     "message": "Hello, dev!"
+    }
+    ```
+2. **Response:** Upon successful WhatsApp message delivery, the endpoint returns a JSON
+response with the following format:
+
+    ```json
+    {
+      "message": "WhatsApp message sent successfully",
+      "success": true
+    }
+    ```
+
+    If there is an error, the endpoint returns a JSON response with an
+    error message and a `success` value of `false`.
+    The HTTP status code will also indicate the type of error
+    (e.g., 400 for a bad request, 500 for a server error).
+
+    Example error response:
+
+    ```json
+    {
+      "message": "Failed to send WhatsApp message",
       "success": false
     }
     ```
