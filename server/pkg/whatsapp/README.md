@@ -6,7 +6,7 @@
 
 ```bash
 go get go.mau.fi/whatsmeow
-go get github.com/mattn/go-sqlite3
+go get modernc.org/sqlite
 go get google.golang.org/protobuf/proto
 ```
 
