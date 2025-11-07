@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -47,13 +46,7 @@ func createServer() *http.Server {
 }
 
 func runServer() {
-	// Initialize database connection
-	db, err := sql.Open("pg", viper.GetString("DB_DSN"))
-	if err != nil {
-		slog.Error("Failed to connect to database: %v", "error", err)
-	}
-	defer db.Close()
-
+	var err error
 	server := createServer()
 
 	port := viper.GetInt("PORT")
@@ -104,11 +97,8 @@ func main() {
 	}
 
 	// flags
-	rootCmd.PersistentFlags().String("db-dsn", "postgresql://user:password@localhost:5432/database_name?sslmode=disable", "Database DSN")
 	rootCmd.PersistentFlags().Int("port", 8080, "Port to listen on")
 	rootCmd.PersistentFlags().String("host", "0.0.0.0", "Host to listen on")
-	rootCmd.PersistentFlags().String("jwt-secret", "your_jwt_secret_key_here", "Your JWT secret key")
-	rootCmd.PersistentFlags().Int("jwt-expiration", 3600, "Your JWT expiration period")
 	rootCmd.PersistentFlags().String("SMTP_HOST", "smtp.gmail.com", "SMTP HOST (env: SMTP_HOST)")
 	rootCmd.PersistentFlags().Int("SMTP_PORT", 587, "SMTP PORT (env: SMTP_PORT)")
 	rootCmd.PersistentFlags().String("SMTP_USERNAME", "", "SMTP Username (env: SMTP_USERNAME)")
@@ -116,11 +106,8 @@ func main() {
 	rootCmd.PersistentFlags().String("SMTP_EMAIL", "", "SMTP Email (env: SMTP_EMAIL)")
 
 	// Bind flags to viper
-	viper.BindPFlag("DB_DSN", rootCmd.PersistentFlags().Lookup("db-dsn"))
 	viper.BindPFlag("PORT", rootCmd.PersistentFlags().Lookup("port"))
 	viper.BindPFlag("HOST", rootCmd.PersistentFlags().Lookup("host"))
-	viper.BindPFlag("JWT_SECRET", rootCmd.PersistentFlags().Lookup("jwt-secret"))
-	viper.BindPFlag("JWT_EXPIRATION", rootCmd.PersistentFlags().Lookup("jwt-expiration"))
 	viper.BindPFlag("SMTP_HOST", rootCmd.PersistentFlags().Lookup("SMTP_HOST"))
 	viper.BindPFlag("SMTP_PORT", rootCmd.PersistentFlags().Lookup("SMTP_PORT"))
 	viper.BindPFlag("SMTP_USERNAME", rootCmd.PersistentFlags().Lookup("SMTP_USERNAME"))
