@@ -23,9 +23,10 @@ go get github.com/mdp/qrterminal/v3
 ### Basic Setup
 
 1. **Run the application:**
-   ```bash
+
+```bash
    go run main.go
-   ```
+```
 
 2. **Scan QR Code:**
    - A QR code will be printed in the terminal
@@ -148,7 +149,7 @@ func sendLocation(phoneNumber string, latitude, longitude float64) error {
 
 ## Folder Structure Integration
 
-```
+```bash
 myproject/
 ├── cmd/
 │   └── whatsapp-bot/
@@ -170,7 +171,8 @@ myproject/
 
 ## Important Notes
 
-1. **Phone Number Format:** Always use format `countrycode+number` without `+` or spaces
+1. **Phone Number Format:** Always use format `countrycode+number` without `+`
+or spaces
    - ✅ Correct: `254712345678`
    - ❌ Wrong: `+254 712 345 678` or `0712345678`
 
@@ -197,7 +199,9 @@ myproject/
 ## Troubleshooting
 
 ### QR Code Not Showing
+
 Install qrterminal and modify the code:
+
 ```go
 import "github.com/mdp/qrterminal/v3"
 
@@ -209,11 +213,13 @@ for evt := range qrChan {
 ```
 
 ### Connection Issues
+
 - Check internet connection
 - Delete `whatsapp.db` and re-authenticate
 - Ensure WhatsApp is active on your phone
 
 ### Messages Not Sending
+
 - Verify phone number format
 - Check if number is on WhatsApp
 - Ensure you're not rate-limited
