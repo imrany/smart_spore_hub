@@ -18,15 +18,11 @@ import (
 	"github.com/imrany/smart_spore_hub/server/middleware"
 )
 
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, welcome to smart spore hub server!")
-}
-
 func createServer() *http.Server {
 	mux := http.NewServeMux()
 
 	// general routes (unprotected)
-	mux.HandleFunc("/", healthHandler)
+	mux.HandleFunc("/health", v1.HealthHandler)
 
 	//api routers (protected)
 	api := http.NewServeMux()
