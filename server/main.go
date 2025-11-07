@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -57,8 +56,8 @@ func runServer() {
 	go func() {
 		slog.Info("Server started on ", "host", host, "port", port)
 		err = server.ListenAndServe()
-		if err != nil {
-			log.Fatalf("Error starting server: %s", err.Error())
+		if err != nil && err != http.ErrServerClosed {
+			slog.Error("Error starting server", "error", err.Error())
 		}
 	}()
 
