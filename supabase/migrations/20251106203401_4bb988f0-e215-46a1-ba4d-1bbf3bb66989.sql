@@ -97,6 +97,7 @@ CREATE TABLE public.notification_preferences (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   sms_enabled BOOLEAN DEFAULT false,
   whatsapp_enabled BOOLEAN DEFAULT false,
+  email_enabled BOOLEAN DEFAULT false,
   phone_number TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

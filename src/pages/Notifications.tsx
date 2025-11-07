@@ -2,21 +2,28 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Session } from "@supabase/supabase-js";
-import { Bell, MessageSquare, Phone } from "lucide-react";
+import { Bell, Mail, MessageSquare, Phone } from "lucide-react";
 
 const Notifications = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(false);
-  
+
   const [smsEnabled, setSmsEnabled] = useState(false);
+  const [emailEnabled, setEmailEnabled] = useState(false);
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
 
@@ -62,19 +69,22 @@ const Notifications = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase
-        .from("notification_preferences")
-        .upsert({
-          user_id: session.user.id,
-          sms_enabled: smsEnabled,
-          whatsapp_enabled: whatsappEnabled,
-          phone_number: phoneNumber,
-        });
+      const { error } = await supabase.from("notification_preferences").upsert({
+        user_id: session.user.id,
+        sms_enabled: smsEnabled,
+        whatsapp_enabled: whatsappEnabled,
+        phone_number: phoneNumber,
+        email_enabled: emailEnabled,
+      });
 
       if (error) throw error;
       toast.success("Notification preferences saved!");
-    } catch (error: any) {
-      toast.error("Failed to save preferences");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to save preferences: ${error.message}`);
+      } else {
+        toast.error("Failed to save preferences");
+      }
     } finally {
       setLoading(false);
     }
@@ -83,10 +93,12 @@ const Notifications = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <div className="container mx-auto px-4 pt-24 pb-12 max-w-2xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">Notification Settings</h1>
+          <h1 className="text-4xl font-bold text-primary mb-2">
+            Notification Settings
+          </h1>
           <p className="text-muted-foreground">
             Stay updated with market opportunities and important alerts
           </p>
@@ -99,7 +111,8 @@ const Notifications = () => {
               <div>
                 <CardTitle>Communication Preferences</CardTitle>
                 <CardDescription>
-                  Choose how you want to receive notifications about environmental alerts, new listings, and orders
+                  Choose how you want to receive notifications about
+                  environmental alerts, new listings, and orders
                 </CardDescription>
               </div>
             </div>
@@ -107,6 +120,25 @@ const Notifications = () => {
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Mail className="w-6 h-6 text-accent" />
+                  <div>
+                    <Label htmlFor="email" className="text-base font-medium">
+                      Email Notifications
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive email notifications for urgent updates
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="email"
+                  checked={emailEnabled}
+                  onCheckedChange={setEmailEnabled}
+                />
+              </div>
+
+              {/*<div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
                 <div className="flex items-center gap-3">
                   <Phone className="w-6 h-6 text-accent" />
                   <div>
@@ -123,7 +155,7 @@ const Notifications = () => {
                   checked={smsEnabled}
                   onCheckedChange={setSmsEnabled}
                 />
-              </div>
+              </div>*/}
 
               <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
                 <div className="flex items-center gap-3">
@@ -155,13 +187,14 @@ const Notifications = () => {
                 onChange={(e) => setPhoneNumber(e.target.value)}
               />
               <p className="text-sm text-muted-foreground">
-                Required for SMS and WhatsApp notifications
+                {/*Required for SMS and WhatsApp notifications*/}
+                Required for WhatsApp notifications
               </p>
             </div>
 
-            <Button 
-              onClick={handleSave} 
-              className="w-full" 
+            <Button
+              onClick={handleSave}
+              className="w-full"
               disabled={loading}
               variant="hero"
             >
@@ -177,7 +210,10 @@ const Notifications = () => {
           <CardContent className="text-sm text-muted-foreground space-y-2">
             <p>You will receive notifications for:</p>
             <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Environmental alerts when temperature or humidity exceed safe levels</li>
+              <li>
+                Environmental alerts when temperature or humidity exceed safe
+                levels
+              </li>
               <li>New market listings matching your interests</li>
               <li>Orders placed on your products (farmers)</li>
               <li>Price changes and special offers</li>
