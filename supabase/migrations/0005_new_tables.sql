@@ -3,27 +3,12 @@ CREATE TABLE public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT NOT NULL,
   phone TEXT,
+  email TEXT,
   role TEXT NOT NULL,
   location TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
--- Enable RLS on profiles
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-
--- Profiles policies
-CREATE POLICY "Users can view their own profile"
-  ON public.profiles FOR SELECT
-  USING (auth.uid() = id);
-
-CREATE POLICY "Users can update their own profile"
-  ON public.profiles FOR UPDATE
-  USING (auth.uid() = id);
-
-CREATE POLICY "Users can insert their own profile"
-  ON public.profiles FOR INSERT
-  WITH CHECK (auth.uid() = id);
 
 -- Create hubs table
 CREATE TABLE public.hubs (
@@ -35,16 +20,6 @@ CREATE TABLE public.hubs (
   contact_phone TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
-ALTER TABLE public.hubs ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Anyone can view hubs"
-  ON public.hubs FOR SELECT
-  USING (true);
-
-CREATE POLICY "Managers can update their hubs"
-  ON public.hubs FOR UPDATE
-  USING (auth.uid() = manager_id);
 
 -- Create courses table
 CREATE TABLE public.courses (
@@ -58,13 +33,7 @@ CREATE TABLE public.courses (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Anyone can view courses"
-  ON public.courses FOR SELECT
-  USING (true);
-
--- Create market listings table
+-- Create market_listings table
 CREATE TABLE public.market_listings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   farmer_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -78,17 +47,7 @@ CREATE TABLE public.market_listings (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-ALTER TABLE public.market_listings ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Anyone can view available listings"
-  ON public.market_listings FOR SELECT
-  USING (available = true);
-
-CREATE POLICY "Farmers can manage their listings"
-  ON public.market_listings FOR ALL
-  USING (auth.uid() = farmer_id);
-
--- Create notification preferences table
+-- Create notification_preferences table
 CREATE TABLE public.notification_preferences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -99,17 +58,7 @@ CREATE TABLE public.notification_preferences (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-ALTER TABLE public.notification_preferences ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view their notification preferences"
-  ON public.notification_preferences FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can manage their notification preferences"
-  ON public.notification_preferences FOR ALL
-  USING (auth.uid() = user_id);
-
--- Create trigger for profile updates
+-- Create trigger function to update updated_at
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -118,6 +67,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Attach trigger to profiles to keep updated_at current
 CREATE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW

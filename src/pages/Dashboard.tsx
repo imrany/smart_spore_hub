@@ -4,12 +4,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { EnvironmentalMonitor } from "@/components/EnvironmentalMonitor";
 import { SensorSimulator } from "@/components/SensorSimulator";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Session } from "@supabase/supabase-js";
 import { Plus, ShoppingBag } from "lucide-react";
@@ -42,7 +55,7 @@ const Dashboard = () => {
   const [selectedHubId, setSelectedHubId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  
+
   // Form state
   const [productName, setProductName] = useState("");
   const [description, setDescription] = useState("");
@@ -79,7 +92,7 @@ const Dashboard = () => {
       .select("role")
       .eq("id", userId)
       .single();
-    
+
     setProfile(data);
     loadListings();
     loadHubs();
@@ -90,7 +103,8 @@ const Dashboard = () => {
       .from("hubs")
       .select("id, name")
       .order("name");
-    
+
+    console.log(data);
     if (data && data.length > 0) {
       setHubs(data);
       setSelectedHubId(data[0].id);
@@ -117,16 +131,14 @@ const Dashboard = () => {
     e.preventDefault();
     if (!session) return;
 
-    const { error } = await supabase
-      .from("market_listings")
-      .insert({
-        farmer_id: session.user.id,
-        product_name: productName,
-        description,
-        quantity: parseFloat(quantity),
-        unit,
-        price_per_unit: parseFloat(price),
-      });
+    const { error } = await supabase.from("market_listings").insert({
+      farmer_id: session.user.id,
+      product_name: productName,
+      description,
+      quantity: parseFloat(quantity),
+      unit,
+      price_per_unit: parseFloat(price),
+    });
 
     if (error) {
       toast.error("Failed to create listing");
@@ -145,15 +157,18 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <div className="container mx-auto px-4 pt-24 pb-12">
         {/* Environmental Monitoring Section */}
         {selectedHubId && (
           <div className="mb-8">
             <div className="mb-4">
-              <h2 className="text-2xl font-bold text-primary mb-2">Environmental Monitoring</h2>
+              <h2 className="text-2xl font-bold text-primary mb-2">
+                Environmental Monitoring
+              </h2>
               <p className="text-muted-foreground">
-                Real-time temperature and humidity tracking for {hubs.find(h => h.id === selectedHubId)?.name || 'hub'}
+                Real-time temperature and humidity tracking for{" "}
+                {hubs.find((h) => h.id === selectedHubId)?.name || "hub"}
               </p>
             </div>
             <div className="grid lg:grid-cols-3 gap-6">
@@ -170,14 +185,16 @@ const Dashboard = () => {
         {/* Market Dashboard Section */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-primary mb-2">Market Dashboard</h1>
+            <h1 className="text-4xl font-bold text-primary mb-2">
+              Market Dashboard
+            </h1>
             <p className="text-muted-foreground">
-              {profile?.role === "farmer" 
-                ? "Manage your listings and connect with buyers" 
+              {profile?.role === "farmer"
+                ? "Manage your listings and connect with buyers"
                 : "Browse fresh mushroom products from local farmers"}
             </p>
           </div>
-          
+
           {profile?.role === "farmer" && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
@@ -237,7 +254,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="price">Price per Unit ($)</Label>
+                    <Label htmlFor="price">Price per Unit (Kes)</Label>
                     <Input
                       id="price"
                       type="number"
@@ -268,7 +285,10 @@ const Dashboard = () => {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map((listing) => (
-              <Card key={listing.id} className="hover:shadow-lg transition-shadow">
+              <Card
+                key={listing.id}
+                className="hover:shadow-lg transition-shadow"
+              >
                 <CardHeader>
                   <CardTitle>{listing.product_name}</CardTitle>
                   <CardDescription>{listing.description}</CardDescription>
@@ -277,11 +297,15 @@ const Dashboard = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Quantity:</span>
-                      <span className="font-semibold">{listing.quantity} {listing.unit}</span>
+                      <span className="font-semibold">
+                        {listing.quantity} {listing.unit}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Price:</span>
-                      <span className="font-semibold text-accent">${listing.price_per_unit}/{listing.unit}</span>
+                      <span className="font-semibold text-accent">
+                        ${listing.price_per_unit}/{listing.unit}
+                      </span>
                     </div>
                     {profile?.role === "buyer" && (
                       <Button className="w-full mt-4" variant="hero">

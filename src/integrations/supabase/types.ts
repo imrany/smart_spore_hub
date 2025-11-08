@@ -165,6 +165,7 @@ export type Database = {
           created_at: string | null;
           id: string;
           phone_number: string | null;
+          email_enabled: boolean | null;
           sms_enabled: boolean | null;
           user_id: string | null;
           whatsapp_enabled: boolean | null;

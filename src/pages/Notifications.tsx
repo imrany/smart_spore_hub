@@ -51,13 +51,15 @@ const Notifications = () => {
   }, [navigate]);
 
   const loadPreferences = async (userId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("notification_preferences")
       .select("*")
       .eq("user_id", userId)
       .single();
 
+    console.log(data, error);
     if (data) {
+      setEmailEnabled(data.email_enabled);
       setSmsEnabled(data.sms_enabled);
       setWhatsappEnabled(data.whatsapp_enabled);
       setPhoneNumber(data.phone_number || "");
@@ -69,14 +71,20 @@ const Notifications = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.from("notification_preferences").upsert({
-        user_id: session.user.id,
-        sms_enabled: smsEnabled,
-        whatsapp_enabled: whatsappEnabled,
-        phone_number: phoneNumber,
-        email_enabled: emailEnabled,
-      });
+      const { data, error } = await supabase
+        .from("notification_preferences")
+        .upsert(
+          {
+            user_id: session.user.id,
+            sms_enabled: smsEnabled,
+            whatsapp_enabled: whatsappEnabled,
+            phone_number: phoneNumber,
+            email_enabled: emailEnabled,
+          },
+          { onConflict: "user_id" },
+        );
 
+      console.log(data, error);
       if (error) throw error;
       toast.success("Notification preferences saved!");
     } catch (error: unknown) {

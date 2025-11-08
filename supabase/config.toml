@@ -1,4 +1,5 @@
-project_id = "hhaufizlhagxkprrczil"
+# project_id = "hhaufizlhagxkprrczil"
+project_id = "hcqxxoyhnmzpuqulcgjv"
 
 [functions.process-sensor-reading]
 verify_jwt = false

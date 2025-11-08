@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -19,34 +25,39 @@ export const SensorSimulator = ({ hubId }: Props) => {
     setSending(true);
     try {
       const response = await fetch(
-        'https://hhaufizlhagxkprrczil.supabase.co/functions/v1/process-sensor-reading',
+        // "https://hhaufizlhagxkprrczil.supabase.co/functions/v1/process-sensor-reading",
+        "http://localhost:3000/functions/v1/process-sensor-reading",
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             hub_id: hubId,
             temperature: parseFloat(temperature),
             humidity: parseFloat(humidity),
           }),
-        }
+        },
       );
 
       const result = await response.json();
-      
+
       if (result.success) {
         toast.success(
-          result.alert_triggered 
-            ? "Reading sent - Alert triggered!" 
-            : "Reading sent successfully"
+          result.alert_triggered
+            ? "Reading sent - Alert triggered!"
+            : "Reading sent successfully",
         );
       } else {
         throw new Error(result.error);
       }
-    } catch (error: any) {
-      console.error('Error sending reading:', error);
-      toast.error("Failed to send reading");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        console.error("Error sending reading:", error);
+        toast.error("Failed to send reading");
+      }
     } finally {
       setSending(false);
     }
@@ -95,15 +106,11 @@ export const SensorSimulator = ({ hubId }: Props) => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button 
-            onClick={sendReading} 
-            disabled={sending}
-            className="flex-1"
-          >
+          <Button onClick={sendReading} disabled={sending} className="flex-1">
             {sending ? "Sending..." : "Send Reading"}
           </Button>
-          <Button 
-            onClick={sendRandomReading} 
+          <Button
+            onClick={sendRandomReading}
             variant="outline"
             disabled={sending}
           >

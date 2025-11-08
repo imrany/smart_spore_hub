@@ -26,46 +26,48 @@ interface Props {
 }
 
 export const EnvironmentalMonitor = ({ hubId }: Props) => {
-  const [latestReading, setLatestReading] = useState<SensorReading | null>(null);
+  const [latestReading, setLatestReading] = useState<SensorReading | null>(
+    null,
+  );
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadData();
-    
+
     // Subscribe to real-time sensor readings
     const readingsChannel = supabase
-      .channel('sensor-readings-changes')
+      .channel("sensor-readings-changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'sensor_readings',
+          event: "INSERT",
+          schema: "public",
+          table: "sensor_readings",
           filter: `hub_id=eq.${hubId}`,
         },
         (payload) => {
-          console.log('New sensor reading:', payload);
+          console.log("New sensor reading:", payload);
           setLatestReading(payload.new as SensorReading);
-        }
+        },
       )
       .subscribe();
 
     // Subscribe to real-time alerts
     const alertsChannel = supabase
-      .channel('alerts-changes')
+      .channel("alerts-changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'alerts',
+          event: "*",
+          schema: "public",
+          table: "alerts",
           filter: `hub_id=eq.${hubId}`,
         },
         (payload) => {
-          console.log('Alert update:', payload);
+          console.log("Alert update:", payload);
           loadAlerts();
-        }
+        },
       )
       .subscribe();
 
@@ -82,10 +84,10 @@ export const EnvironmentalMonitor = ({ hubId }: Props) => {
 
   const loadLatestReading = async () => {
     const { data, error } = await supabase
-      .from('sensor_readings')
-      .select('*')
-      .eq('hub_id', hubId)
-      .order('recorded_at', { ascending: false })
+      .from("sensor_readings")
+      .select("*")
+      .eq("hub_id", hubId)
+      .order("recorded_at", { ascending: false })
       .limit(1)
       .single();
 
@@ -96,23 +98,29 @@ export const EnvironmentalMonitor = ({ hubId }: Props) => {
 
   const loadAlerts = async () => {
     const { data } = await supabase
-      .from('alerts')
-      .select('*')
-      .eq('hub_id', hubId)
-      .eq('resolved', false)
-      .order('created_at', { ascending: false });
+      .from("alerts")
+      .select("*")
+      .eq("hub_id", hubId)
+      .eq("resolved", false)
+      .order("created_at", { ascending: false });
 
     setAlerts(data || []);
   };
 
-  const getStatusColor = (value: number, threshold: number, isTemp: boolean) => {
-    if (value > threshold) return 'text-destructive';
-    if (value > threshold * 0.9) return 'text-yellow-600';
-    return 'text-accent';
+  const getStatusColor = (
+    value: number,
+    threshold: number,
+    isTemp: boolean,
+  ) => {
+    if (value > threshold) return "text-destructive";
+    if (value > threshold * 0.9) return "text-yellow-600";
+    return "text-accent";
   };
 
   if (loading) {
-    return <div className="text-center py-4">Loading environmental data...</div>;
+    return (
+      <div className="text-center py-4">Loading environmental data...</div>
+    );
   }
 
   const TEMP_THRESHOLD = 24;
@@ -130,7 +138,9 @@ export const EnvironmentalMonitor = ({ hubId }: Props) => {
           <CardContent>
             {latestReading ? (
               <>
-                <div className={`text-3xl font-bold ${getStatusColor(latestReading.temperature, TEMP_THRESHOLD, true)}`}>
+                <div
+                  className={`text-3xl font-bold ${getStatusColor(latestReading.temperature, TEMP_THRESHOLD, true)}`}
+                >
                   {latestReading.temperature}°C
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -156,7 +166,9 @@ export const EnvironmentalMonitor = ({ hubId }: Props) => {
           <CardContent>
             {latestReading ? (
               <>
-                <div className={`text-3xl font-bold ${getStatusColor(latestReading.humidity, HUMIDITY_THRESHOLD, false)}`}>
+                <div
+                  className={`text-3xl font-bold ${getStatusColor(latestReading.humidity, HUMIDITY_THRESHOLD, false)}`}
+                >
                   {latestReading.humidity}%
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
