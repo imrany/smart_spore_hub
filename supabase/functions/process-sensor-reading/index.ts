@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,22 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Email configuration
-const getEmailClient = () => {
-  return new SMTPClient({
-    connection: {
-      hostname: Deno.env.get("SMTP_HOST") || "smtp.gmail.com",
-      port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
-      tls: true,
-      auth: {
-        username: Deno.env.get("SMTP_USERNAME")!,
-        password: Deno.env.get("SMTP_PASSWORD")!,
-      },
-    },
-  });
-};
-
-// Send email notification
+// Send email notification via your Go server
 async function sendEmailNotification(
   to: string,
   hubName: string,
@@ -33,8 +17,6 @@ async function sendEmailNotification(
   humidity?: number,
 ) {
   try {
-    const client = getEmailClient();
-
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -175,16 +157,29 @@ async function sendEmailNotification(
       </html>
     `;
 
-    await client.send({
-      from: Deno.env.get("SMTP_EMAIL")!,
-      to: to,
-      subject: `🚨 Alert: ${alertType.toUpperCase()} threshold exceeded at ${hubName}`,
-      content: message,
-      html: htmlContent,
+    // Call your Go server's email endpoint
+    const emailApiUrl = Deno.env.get("EMAIL_API_URL");
+
+    const response = await fetch(emailApiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        to,
+        subject: `🚨 Alert: ${alertType.toUpperCase()} threshold exceeded at ${hubName}`,
+        html: htmlContent,
+        is_html: true,
+      }),
     });
 
-    await client.close();
-    console.log("Email notification sent successfully to:", to);
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Email API error: ${response.status} - ${errorData}`);
+    }
+
+    const result = await response.json();
+    console.log("Email notification sent successfully:", result);
     return true;
   } catch (error) {
     console.error("Failed to send email notification:", error);

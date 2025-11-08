@@ -240,6 +240,7 @@ const Hubs = () => {
         location: location,
         description: description,
         contact_phone: contactPhone,
+        manager_id: session.user.id,
       },
     ]);
 

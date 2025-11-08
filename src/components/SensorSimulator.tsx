@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Activity } from "lucide-react";
+import { SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 
 interface Props {
   hubId: string;
@@ -26,10 +27,11 @@ export const SensorSimulator = ({ hubId }: Props) => {
     try {
       const response = await fetch(
         // "https://hhaufizlhagxkprrczil.supabase.co/functions/v1/process-sensor-reading",
-        "http://localhost:3000/functions/v1/process-sensor-reading",
+        "https://hcqxxoyhnmzpuqulcgjv.supabase.co/functions/v1/process-sensor-reading",
         {
           method: "POST",
           headers: {
+            Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -49,9 +51,11 @@ export const SensorSimulator = ({ hubId }: Props) => {
             : "Reading sent successfully",
         );
       } else {
-        throw new Error(result.error);
+        toast.error(result.error);
+        console.error(result.error);
       }
     } catch (error: unknown) {
+      console.error(error);
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
