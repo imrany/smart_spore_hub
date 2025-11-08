@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/imrany/smart_spore_hub/server/database/crypto"
 )
 
 func LoggingMiddleware(next http.Handler) http.Handler {
@@ -24,7 +26,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		token := strings.Split(r.Header.Get("Authorization"), " ")[1]
-		if token != "token" {
+		if _, err := crypto.ValidateToken(token); err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
