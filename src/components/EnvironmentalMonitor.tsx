@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, Thermometer, Droplets } from "lucide-react";
 
 interface SensorReading {
@@ -24,6 +25,51 @@ interface Alert {
 interface Props {
   hubId: string;
 }
+
+// Loading skeleton component
+const MonitorSkeleton = () => (
+  <div className="space-y-4">
+    {/* Current Readings Skeleton */}
+    <div className="grid md:grid-cols-2 gap-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <Skeleton className="h-5 w-24" />
+          <Thermometer className="w-5 h-5 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-10 w-32 mb-2" />
+          <Skeleton className="h-4 w-40" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <Skeleton className="h-5 w-20" />
+          <Droplets className="w-5 h-5 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-10 w-28 mb-2" />
+          <Skeleton className="h-4 w-40" />
+        </CardContent>
+      </Card>
+    </div>
+
+    {/* Alert Skeleton */}
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-5 w-32" />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="p-3 bg-muted/50 rounded-lg">
+          <Skeleton className="h-4 w-full mb-2" />
+          <Skeleton className="h-3 w-40" />
+        </div>
+      </CardContent>
+    </Card>
+
+    <Skeleton className="h-3 w-48 mx-auto" />
+  </div>
+);
 
 export const EnvironmentalMonitor = ({ hubId }: Props) => {
   const [latestReading, setLatestReading] = useState<SensorReading | null>(
@@ -118,9 +164,7 @@ export const EnvironmentalMonitor = ({ hubId }: Props) => {
   };
 
   if (loading) {
-    return (
-      <div className="text-center py-4">Loading environmental data...</div>
-    );
+    return <MonitorSkeleton />;
   }
 
   const TEMP_THRESHOLD = 24;

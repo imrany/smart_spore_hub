@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRoutes } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,46 +25,46 @@ export const Navbar = () => {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
+    console.log("handleLogout called");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Error during logout:", error);
+        return;
+      }
+      navigate("/");
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
   };
 
-  const appRoutes = [
+  const authenticatedRoutes = [
     {
       label: "Dashboard",
       path: "/dashboard",
-      requiresAuth: session,
     },
     {
       label: "Learning",
       path: "/learning",
-      requiresAuth: session,
     },
     {
       label: "Hubs",
       path: "/hubs",
-      requiresAuth: session,
     },
     {
       label: "Notifications",
       path: "/notifications",
-      requiresAuth: session,
     },
-    {
-      label: "Logout",
-      path: "/logout",
-      requiresAuth: session,
-      onClick: handleLogout,
-    },
+  ];
+
+  const unauthenticatedRoutes = [
     {
       label: "Login",
       path: "/auth",
-      requiresAuth: !session,
     },
     {
       label: "Get Started",
       path: "/auth",
-      requiresAuth: !session,
     },
   ];
 
@@ -81,51 +81,33 @@ export const Navbar = () => {
 
           {session ? (
             <div className="flex items-center gap-4">
-              {appRoutes
-                .filter((route) => route.requiresAuth)
-                .map((route) => (
-                  <Link key={route.label} to={route.path}>
-                    <Button
-                      variant={
-                        route.label === "Logout"
-                          ? "outline"
-                          : window.location.pathname === route.path
-                            ? "hero"
-                            : "ghost"
-                      }
-                      className={`${
-                        window.location.pathname === route.path
-                          ? "variant-hero"
-                          : ""
-                      }`}
-                      onClick={() => {
-                        if (route.label === "Logout") {
-                          handleLogout();
-                        }
-                      }}
-                    >
-                      {route.label === "Logout" && (
-                        <LogOut className="w-4 h-4 mr-2" />
-                      )}
-                      {route.label}
-                    </Button>
-                  </Link>
-                ))}
+              {authenticatedRoutes.map((route) => (
+                <Link key={route.label} to={route.path}>
+                  <Button
+                    variant={
+                      window.location.pathname === route.path ? "hero" : "ghost"
+                    }
+                  >
+                    {route.label}
+                  </Button>
+                </Link>
+              ))}
+
+              {/* Logout button without Link wrapper */}
+              <Button variant="outline" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
             </div>
           ) : (
             <div className="flex items-center gap-4">
-              {appRoutes
-                .filter((route) => !route.requiresAuth)
-                .map((route) => (
-                  <Link key={route.label} to={route.path}>
-                    <Button
-                      variant={route.label === "Login" ? "ghost" : "hero"}
-                      className="active:variant-hero"
-                    >
-                      {route.label}
-                    </Button>
-                  </Link>
-                ))}
+              {unauthenticatedRoutes.map((route) => (
+                <Link key={route.label} to={route.path}>
+                  <Button variant={route.label === "Login" ? "ghost" : "hero"}>
+                    {route.label}
+                  </Button>
+                </Link>
+              ))}
             </div>
           )}
         </div>
