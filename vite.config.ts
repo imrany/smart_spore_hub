@@ -17,4 +17,6 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Set base to your repo name for GitHub Pages
+  base: "/smart_spore_hub/",
 }));
