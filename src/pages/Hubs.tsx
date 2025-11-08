@@ -1,55 +1,44 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Session } from "@supabase/supabase-js";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Building2, MapPin, Phone } from "lucide-react";
-
-interface Hub {
-  id: string;
-  name: string;
-  location: string;
-  description: string;
-  contact_phone: string;
-}
+import { useFetch } from "@/hooks/use-fetch";
+import { Hub, Profile, Session } from "@/types";
+import { toast } from "sonner";
 
 const Hubs = () => {
-  const navigate = useNavigate();
-  const [session, setSession] = useState<Session | null>(null);
   const [hubs, setHubs] = useState<Hub[]>([]);
+  const parsedSession = JSON.parse(localStorage.getItem("session")) as Session;
+  const { fetchData, loading } = useFetch<Profile>();
+  const [session, setSession] = useState<Session | null>(parsedSession);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setSession(session);
-        loadHubs();
+    const getHubs = async () => {
+      if (session) {
+        const { data, error } = await fetchData(`/api/v1/hubs/${session.id}`, {
+          headers: {
+            Authorization: `Bearer ${session.token}`,
+          },
+          method: "GET",
+        });
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+        if (data) {
+          setHubs(data as unknown as Hub[]);
+        }
       }
-    });
+    };
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setSession(session);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const loadHubs = async () => {
-    const { data } = await supabase
-      .from("hubs")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    setHubs(data || mockHubs);
-  };
+    getHubs();
+  }, []);
 
   // Mock hub data for demonstration
   const mockHubs: Hub[] = [
@@ -57,7 +46,8 @@ const Hubs = () => {
       id: "1",
       name: "Central Valley Hub",
       location: "123 Farm Road, Central Valley",
-      description: "Main collection and distribution center serving the central region.",
+      description:
+        "Main collection and distribution center serving the central region.",
       contact_phone: "+1234567890",
     },
     {
@@ -81,12 +71,15 @@ const Hubs = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <div className="container mx-auto px-4 pt-24 pb-12">
         <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold text-primary mb-4">Hub Management</h1>
+          <h1 className="text-4xl font-bold text-primary mb-4">
+            Hub Management
+          </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Connect with local mushroom farming hubs for support, resources, and market access.
+            Connect with local mushroom farming hubs for support, resources, and
+            market access.
           </p>
         </div>
 
@@ -109,7 +102,9 @@ const Hubs = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                  <span className="text-sm font-medium">{hub.contact_phone}</span>
+                  <span className="text-sm font-medium">
+                    {hub.contact_phone}
+                  </span>
                 </div>
               </CardContent>
             </Card>

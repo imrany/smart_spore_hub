@@ -1,31 +1,26 @@
 import { Link, useNavigate, useRoutes } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
-import { Session } from "@supabase/supabase-js";
 import mushroomLogo from "@/assets/mushroom-logo.png";
+import { Profile, Session } from "@/types";
+import { useFetch } from "@/hooks/use-fetch";
 
 export const Navbar = () => {
   const navigate = useNavigate();
+  const { fetchData, loading } = useFetch<Profile>();
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    const session = localStorage.getItem("session");
+    if (session) {
+      setSession(JSON.parse(session));
+      navigate("/dashboard");
+    }
+  }, [navigate]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem("session");
     navigate("/");
   };
 

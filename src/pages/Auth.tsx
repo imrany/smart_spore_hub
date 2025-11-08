@@ -1,25 +1,37 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Sprout } from "lucide-react";
-import { Session } from "@supabase/supabase-js";
+import { Profile, Session } from "@/types";
+import { useFetch } from "@/hooks/use-fetch";
 
 const Auth = () => {
+  const { fetchData, loading } = useFetch<Profile>();
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(false);
-  
+
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  
+
   // Signup state
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
@@ -29,80 +41,76 @@ const Auth = () => {
   const [location, setLocation] = useState("");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    const session = localStorage.getItem("session");
+    if (session) {
+      setSession(JSON.parse(session));
+      navigate("/dashboard");
+    }
   }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
+      const { data, error } = await fetchData("/v1/profile/login", {
+        method: "POST",
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
 
-      if (error) throw error;
+      if (error) {
+        toast.error(error);
+        return;
+      }
+      localStorage.setItem("session", JSON.stringify(data.session));
+      setSession(data.session);
       toast.success("Welcome back!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to login");
-    } finally {
-      setLoading(false);
+      navigate("/dashboard");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message || "Failed to login");
+      } else {
+        toast.error("An unknown error occurred");
+      }
     }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: signupEmail,
-        password: signupPassword,
-        options: {
-          emailRedirectTo: redirectUrl,
+      const { data, error } = await fetchData("/v1/profile/create", {
+        method: "POST",
+        body: JSON.stringify({
+          email: signupEmail,
+          password: signupPassword,
+          full_name: fullName,
+          phone,
+          role,
+          location,
+        }),
+        headers: {
+          "Content-Type": "application/json",
         },
       });
 
-      if (signUpError) throw signUpError;
-      
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .insert({
-            id: authData.user.id,
-            full_name: fullName,
-            phone,
-            role,
-            location,
-          });
-
-        if (profileError) throw profileError;
+      if (error) {
+        return toast.error(error.message || "Failed to create account");
       }
 
+      localStorage.setItem("session", JSON.stringify(data.session));
+      setSession(data.session);
+
       toast.success("Account created successfully!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create account");
-    } finally {
-      setLoading(false);
+      navigate("/dashboard");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message || "Failed to create account");
+      } else {
+        toast.error("An unknown error occurred");
+      }
     }
   };
 
@@ -122,7 +130,7 @@ const Auth = () => {
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
@@ -151,7 +159,7 @@ const Auth = () => {
                 </Button>
               </form>
             </TabsContent>
-            
+
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
@@ -187,7 +195,12 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">I am a</Label>
-                  <Select value={role} onValueChange={(value: "farmer" | "buyer") => setRole(value)}>
+                  <Select
+                    value={role}
+                    onValueChange={(value: "farmer" | "buyer") =>
+                      setRole(value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

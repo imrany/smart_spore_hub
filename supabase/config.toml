@@ -1,4 +1,0 @@
-project_id = "hhaufizlhagxkprrczil"
-
-[functions.process-sensor-reading]
-verify_jwt = false

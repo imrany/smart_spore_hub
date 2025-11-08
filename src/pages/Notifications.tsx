@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import {
   Card,
@@ -14,13 +13,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Session } from "@supabase/supabase-js";
 import { Bell, Mail, MessageSquare, Phone } from "lucide-react";
+import { Profile, Session } from "@/types";
+import { useFetch } from "@/hooks/use-fetch";
 
 const Notifications = () => {
   const navigate = useNavigate();
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(false);
+  const parsedSession = JSON.parse(localStorage.getItem("session")) as Session;
+  const { fetchData, loading } = useFetch<Profile>();
+  const [session, setSession] = useState<Session | null>(parsedSession);
 
   const [smsEnabled, setSmsEnabled] = useState(false);
   const [emailEnabled, setEmailEnabled] = useState(false);
@@ -28,37 +29,33 @@ const Notifications = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setSession(session);
-        loadPreferences(session.user.id);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setSession(session);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    if (!session) {
+      navigate("/auth");
+    } else {
+      setSession(parsedSession);
+      loadPreferences(parsedSession.id);
+    }
+  }, [session]);
 
   const loadPreferences = async (userId: string) => {
-    const { data } = await supabase
-      .from("notification_preferences")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
+    const { data, error } = await fetchData(
+      `/api/v1/notification/preferences/${userId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${session?.token}`,
+        },
+      },
+    );
+
+    if (error) {
+      toast.error("Failed to load notification preferences");
+      return;
+    }
 
     if (data) {
       setSmsEnabled(data.sms_enabled);
+      setEmailEnabled(data.email_enabled);
       setWhatsappEnabled(data.whatsapp_enabled);
       setPhoneNumber(data.phone_number || "");
     }
@@ -66,27 +63,35 @@ const Notifications = () => {
 
   const handleSave = async () => {
     if (!session) return;
-    setLoading(true);
 
     try {
-      const { error } = await supabase.from("notification_preferences").upsert({
-        user_id: session.user.id,
-        sms_enabled: smsEnabled,
-        whatsapp_enabled: whatsappEnabled,
-        phone_number: phoneNumber,
-        email_enabled: emailEnabled,
-      });
+      const { data, error } = await fetchData(
+        `/api/v1/notification/preferences/${session.id}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${session?.token}`,
+          },
+          body: JSON.stringify({
+            sms_enabled: smsEnabled,
+            whatsapp_enabled: whatsappEnabled,
+            phone_number: phoneNumber,
+            email_enabled: emailEnabled,
+          }),
+        },
+      );
 
-      if (error) throw error;
-      toast.success("Notification preferences saved!");
+      if (error) {
+        toast.error(`Failed to save preferences: ${error.message}`);
+      } else {
+        toast.success("Notification preferences saved!");
+      }
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast.error(`Failed to save preferences: ${error.message}`);
       } else {
         toast.error("Failed to save preferences");
       }
-    } finally {
-      setLoading(false);
     }
   };
 
