@@ -231,7 +231,21 @@ serve(async (req) => {
     const humidityExceeded = humidity > HUMIDITY_THRESHOLD;
 
     if (tempExceeded || humidityExceeded) {
-      console.log("Threshold exceeded, creating alert");
+      console.log("Threshold exceeded");
+
+      let alertType: string;
+      let message: string;
+
+      if (tempExceeded && humidityExceeded) {
+        alertType = "both";
+        message = `ALERT: Both temperature (${temperature}°C) and humidity (${humidity}%) have exceeded safe thresholds!`;
+      } else if (tempExceeded) {
+        alertType = "temperature";
+        message = `ALERT: Temperature (${temperature}°C) has exceeded the safe threshold of ${TEMP_THRESHOLD}°C!`;
+      } else {
+        alertType = "humidity";
+        message = `ALERT: Humidity (${humidity}%) has exceeded the safe threshold of ${HUMIDITY_THRESHOLD}%!`;
+      }
 
       // Check if there's already an unresolved alert for this hub
       const { data: existingAlerts } = await supabase
@@ -242,22 +256,8 @@ serve(async (req) => {
         .order("created_at", { ascending: false })
         .limit(1);
 
-      // Only create alert if no recent unresolved alert exists
+      // Only create alert record if no recent unresolved alert exists
       if (!existingAlerts || existingAlerts.length === 0) {
-        let alertType: string;
-        let message: string;
-
-        if (tempExceeded && humidityExceeded) {
-          alertType = "both";
-          message = `ALERT: Both temperature (${temperature}°C) and humidity (${humidity}%) have exceeded safe thresholds!`;
-        } else if (tempExceeded) {
-          alertType = "temperature";
-          message = `ALERT: Temperature (${temperature}°C) has exceeded the safe threshold of ${TEMP_THRESHOLD}°C!`;
-        } else {
-          alertType = "humidity";
-          message = `ALERT: Humidity (${humidity}%) has exceeded the safe threshold of ${HUMIDITY_THRESHOLD}%!`;
-        }
-
         const { data: alert, error: alertError } = await supabase
           .from("alerts")
           .insert({
@@ -274,69 +274,72 @@ serve(async (req) => {
           console.error("Error creating alert:", alertError);
         } else {
           console.log("Alert created:", alert);
-
-          // Get hub details and manager contact info
-          const { data: hub } = await supabase
-            .from("hubs")
-            .select("name, manager_id")
-            .eq("id", hub_id)
-            .single();
-
-          if (hub?.manager_id) {
-            // Get manager profile and notification preferences
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("full_name, email")
-              .eq("id", hub.manager_id)
-              .single();
-
-            const { data: preferences } = await supabase
-              .from("notification_preferences")
-              .select("*")
-              .eq("user_id", hub.manager_id)
-              .single();
-
-            // Send notifications based on preferences
-            const notifications: Promise<any>[] = [];
-
-            if (preferences?.email_enabled && profile?.email) {
-              console.log("Sending email notification to:", profile.email);
-              notifications.push(
-                sendEmailNotification(
-                  profile.email,
-                  hub.name,
-                  alertType,
-                  message,
-                  temperature,
-                  humidity,
-                ),
-              );
-            }
-
-            if (preferences?.sms_enabled && preferences?.phone_number) {
-              console.log(
-                "Would send SMS notification to:",
-                preferences.phone_number,
-              );
-              // TODO: Integrate with SMS service (Twilio, Africa's Talking, etc.)
-            }
-
-            if (preferences?.whatsapp_enabled && preferences?.phone_number) {
-              console.log(
-                "Would send WhatsApp notification to:",
-                preferences.phone_number,
-              );
-              // TODO: Integrate with WhatsApp service
-            }
-
-            // Wait for all notifications to complete
-            if (notifications.length > 0) {
-              await Promise.allSettled(notifications);
-            }
-          }
         }
       } else {
         console.log("Unresolved alert already exists, skipping alert creation");
+      }
+
+      // ALWAYS send notifications when threshold is exceeded, regardless of alert status
+      console.log("Sending notifications for threshold breach");
+
+      // Get hub details and manager contact info
+      const { data: hub } = await supabase
+        .from("hubs")
+        .select("name, manager_id")
+        .eq("id", hub_id)
+        .single();
+
+      if (hub?.manager_id) {
+        // Get manager profile and notification preferences
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, email")
+          .eq("id", hub.manager_id)
+          .single();
+
+        const { data: preferences } = await supabase
+          .from("notification_preferences")
+          .select("*")
+          .eq("user_id", hub.manager_id)
+          .single();
+
+        // Send notifications based on preferences
+        const notifications: Promise<any>[] = [];
+
+        if (preferences?.email_enabled && profile?.email) {
+          console.log("Sending email notification to:", profile.email);
+          notifications.push(
+            sendEmailNotification(
+              profile.email,
+              hub.name,
+              alertType,
+              message,
+              temperature,
+              humidity,
+            ),
+          );
+        }
+
+        if (preferences?.sms_enabled && preferences?.phone_number) {
+          console.log(
+            "Would send SMS notification to:",
+            preferences.phone_number,
+          );
+          // TODO: Integrate with SMS service (Twilio, Africa's Talking, etc.)
+        }
+
+        if (preferences?.whatsapp_enabled && preferences?.phone_number) {
+          console.log(
+            "Would send WhatsApp notification to:",
+            preferences.phone_number,
+          );
+          // TODO: Integrate with WhatsApp service
+        }
+
+        // Wait for all notifications to complete
+        if (notifications.length > 0) {
+          await Promise.allSettled(notifications);
+        }
       }
     }
 
