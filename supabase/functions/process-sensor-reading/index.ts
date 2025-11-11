@@ -12,7 +12,6 @@ async function sendEmailNotification(
   to: string,
   hubName: string,
   alertType: string,
-  message: string,
   temperature?: number,
   humidity?: number,
 ) {
@@ -187,6 +186,43 @@ async function sendEmailNotification(
   }
 }
 
+// send whatsapp notification
+async function sendWhatsappNotification(
+  to: string,
+  hubName: string,
+  alertType: string,
+  temperature?: number,
+  humidity?: number,
+) {
+  try {
+    const message = `🚨 *Alert: ${alertType.toUpperCase()} threshold exceeded at ${hubName}*\n\nHub ${hubName} has a temperature of ${temperature}°C and humidity of ${humidity}%`;
+    const whatsappApiUrl = Deno.env.get("WHATSAPP_API_URL");
+
+    const response = await fetch(whatsappApiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        to: [to],
+        message,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Whatsapp API error: ${response.status} - ${errorData}`);
+    }
+
+    const result = await response.json();
+    console.log("Whatsapp notification sent successfully:", result);
+    return true;
+  } catch (error) {
+    console.error("Failed to send whatsapp notification:", error);
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -313,7 +349,6 @@ serve(async (req) => {
               profile.email,
               hub.name,
               alertType,
-              message,
               temperature,
               humidity,
             ),
@@ -329,11 +364,15 @@ serve(async (req) => {
         }
 
         if (preferences?.whatsapp_enabled && preferences?.phone_number) {
-          console.log(
-            "Would send WhatsApp notification to:",
-            preferences.phone_number,
+          notifications.push(
+            sendWhatsappNotification(
+              preferences.phone_number,
+              hub.name,
+              alertType,
+              temperature,
+              humidity,
+            ),
           );
-          // TODO: Integrate with WhatsApp service
         }
 
         // Wait for all notifications to complete
