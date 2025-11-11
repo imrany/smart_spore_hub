@@ -12,6 +12,7 @@ async function sendEmailNotification(
   to: string,
   hubName: string,
   alertType: string,
+  message: string,
   temperature?: number,
   humidity?: number,
 ) {
@@ -223,7 +224,8 @@ async function sendWhatsappNotification(
   }
 }
 
-serve(async (req) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+serve(async (req: any) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -340,7 +342,7 @@ serve(async (req) => {
           .single();
 
         // Send notifications based on preferences
-        const notifications: Promise<any>[] = [];
+        const notifications: Promise<unknown>[] = [];
 
         if (preferences?.email_enabled && profile?.email) {
           console.log("Sending email notification to:", profile.email);
@@ -349,6 +351,7 @@ serve(async (req) => {
               profile.email,
               hub.name,
               alertType,
+              message,
               temperature,
               humidity,
             ),
